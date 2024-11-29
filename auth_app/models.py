@@ -3,6 +3,8 @@ from django.db import models
 from django.contrib.auth.models import User
 from datetime import timedelta
 from django.utils import timezone
+from django.contrib.auth.hashers import check_password
+from django.core.exceptions import ObjectDoesNotExist
 
 
 class User(models.Model):
@@ -14,10 +16,16 @@ class User(models.Model):
         """Hashes the password before saving it"""
         self.password = make_password(raw_password)
     
-    def check_password(self, raw_password):
-        """Checks if the raw password matches the hashed one"""
-        from django.contrib.auth.hashers import check_password
-        return check_password(raw_password, self.password)
+    def authenticate(self, raw_username, raw_password):
+        try:
+            user = User.objects.get(username=raw_username)  
+            if check_password(raw_password, user.password): 
+                return user 
+            return None  
+        except ObjectDoesNotExist:
+            return None 
+    
+        
 
     def __str__(self):
         return self.username
@@ -35,15 +43,20 @@ class Session(models.Model):
         self.session_key = get_random_string(40)
         self.user = user
         self.save()
+        return self
     
     def delete_session_key(self):
         """Delete the session key."""
         self.delete()
 
-    def check_session_key(self):
+    def check_session_key(self, raw_session_key):
         """Check if the session has expired."""
+        session = Session.objects.get(session_key=raw_session_key)
+        if not session:
+            return False
         if self.expires_at > timezone.now():
             return True
+        session.delete_session_key()
         return False
 
     def reset_expiration(self):
