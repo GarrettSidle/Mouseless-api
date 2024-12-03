@@ -21,7 +21,7 @@ class Problem(models.Model):
         
 
 
-class ProblemStatistics(models.Model):
+class Problem_Statistics(models.Model):
     problem = models.ForeignKey(Problem, on_delete=models.CASCADE)
     statistic_type = models.IntegerField(default=0)
     bin_index = models.IntegerField()
@@ -29,7 +29,7 @@ class ProblemStatistics(models.Model):
     
     def update_stat(self, statistic_type, value):
         """Update the statistic for the problem."""
-        stat, created = ProblemStatistics.objects.get_or_create(
+        stat, created = Problem_Statistics.objects.get_or_create(
             problem=self.problem, 
             statistic_type=statistic_type, 
         )
@@ -48,15 +48,15 @@ class ProblemStatistics(models.Model):
     def get_stat(self, statistic_type, bin_index):
         """Retrieve the statistic for the given problem."""
         try:
-            stat = ProblemStatistics.objects.get(
+            stat = Problem_Statistics.objects.get(
                 problem=self.problem, 
                 statistic_type=statistic_type, 
             )
             return stat.value
-        except ProblemStatistics.DoesNotExist:
+        except Problem_Statistics.DoesNotExist:
             return None
     
-class UserProblemStatistics(models.Model):
+class User_Problem_Statistics(models.Model):
     problem = models.ForeignKey(Problem, on_delete=models.CASCADE)
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     best_time = models.DecimalField(default=0, decimal_places=2, max_digits=4) 
@@ -87,5 +87,5 @@ class UserProblemStatistics(models.Model):
 
     def create_new_problem_stat(self, user, problem):
         """Create a new UserProblemStatistics entry."""
-        stat, created = UserProblemStatistics.objects.get_or_create(user=user, problem=problem)
+        stat, created = User_Problem_Statistics.objects.get_or_create(user=user, problem=problem)
         return stat

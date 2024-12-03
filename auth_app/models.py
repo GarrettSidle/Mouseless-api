@@ -40,24 +40,43 @@ class Session(models.Model):
     def create_session_key(self, user):
         """Create a new session key for the user."""
         from django.utils.crypto import get_random_string
-        self.session_key = get_random_string(40)
-        self.user = user
-        self.save()
-        return self
+        
+        #if the user already has a key
+        try:
+            #get existing sessions
+            session = Session.objects.get(user=user)
+            
+            #if session is not expired
+            if(session.expires_at > timezone.now()):
+                #reset expiration and return it to user
+                session.reset_expiration()
+                return session
+            #if it is expired, delete the key
+            session.delete_session_key()
+            session = None
+            
+        except Session.DoesNotExist:
+            session = None
+            
+        #create a new key and add it to the db
+        session = Session.objects.create(session_key=get_random_string(40), user=user)
+        session.save()
+        return session
     
     def delete_session_key(self):
         """Delete the session key."""
         self.delete()
 
-    def check_session_key(self, raw_session_key):
+    def check_session_key(raw_session_key: str):
         """Check if the session has expired."""
-        session = Session.objects.get(session_key=raw_session_key)
-        if not session:
+        print(raw_session_key)
+        try:
+            session = Session.objects.get(session_key=raw_session_key)
+            if session.expires_at > timezone.now():
+                return True
+            session.delete_session_key()
+        except: 
             return False
-        if self.expires_at > timezone.now():
-            return True
-        session.delete_session_key()
-        return False
 
     def reset_expiration(self):
         """Reset the session expiration to 3 days from now."""

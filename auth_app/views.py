@@ -2,9 +2,11 @@ from django.views.decorators.csrf import csrf_exempt
 from django.http import JsonResponse
 from .models import User
 from .models import Session
+from django.http import JsonResponse, HttpRequest  
+import json
 
 @csrf_exempt
-def register_user(request):
+def register_user(request : HttpRequest):
     if request.method != "POST":
         return JsonResponse({"error": "Invalid HTTP method."}, status=405)
     
@@ -24,7 +26,7 @@ def register_user(request):
     return JsonResponse({"message": "User created successfully."}, status=201)
 
 @csrf_exempt
-def login_user(request):
+def login_user(request : HttpRequest):
     if request.method != "POST":
         return JsonResponse({"error": "Invalid HTTP method."}, status=405)
     username = request.POST.get('username')
@@ -43,16 +45,26 @@ def login_user(request):
 
     
 @csrf_exempt
-def verify_session(request):
-    if request.method != "GET":
+def verify_session(request : HttpRequest):
+    if request.method != "POST":
         return JsonResponse({"error": "Invalid HTTP method."}, status=405)
-    raw_session_key = request.GET.get('session_id')
-    if(Session.check_session_key(request, raw_session_key)):
+    raw_session_key = request.POST.get('session_id')
+    print(raw_session_key)
+    if(Session.check_session_key(raw_session_key)):
         return JsonResponse({'message': 'Session is Verified', }, status=200)
     return JsonResponse({'message': 'Session is NOT Verified', }, status=401)
     
     
-    
-def logout(request):
+@csrf_exempt
+def logout(request : HttpRequest):
     if request.method != "POST":
         return JsonResponse({"error": "Invalid HTTP method."}, status=405)
+    
+    try:
+        print(request.POST.get('session_id'))
+        session = Session.objects.get(session_key=request.POST.get('session_id'))
+    except Session.DoesNotExist:
+        return JsonResponse({'message': 'Unable to find session', }, status=404)
+    
+    session.delete_session_key()
+    return JsonResponse({'message': 'Session is ended', }, status=200)
