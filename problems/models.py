@@ -18,6 +18,12 @@ class Problem(models.Model):
     def get_random_problem():
         """Return a random problem from the database."""
         return Problem.objects.order_by('?').first()
+    
+    def get_problem(problem_number):
+        """Return a problem from the database based on problem number."""
+        problem = Problem.objects.get(number=problem_number)
+
+        
         
 
 
@@ -27,10 +33,13 @@ class Problem_Statistics(models.Model):
     bin_index = models.IntegerField()
     value = models.DecimalField(default=0, decimal_places=2, max_digits=4)
     
-    def update_stat(self, statistic_type, value):
+    def update_stat(problem, statistic_type, value):
         """Update the statistic for the problem."""
+        
+            
+        
         stat, created = Problem_Statistics.objects.get_or_create(
-            problem=self.problem, 
+            problem=problem, 
             statistic_type=statistic_type, 
         )
         match(statistic_type):
@@ -42,7 +51,6 @@ class Problem_Statistics(models.Model):
                 stat.bin_index = math.floor(value / 25)
         
         stat.value = value
-        stat.save()
         return stat
     
     def get_stat(self, statistic_type, bin_index):
